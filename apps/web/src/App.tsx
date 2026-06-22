@@ -37,6 +37,7 @@ import {
 import jsPDF from "jspdf";
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { buildApiUrl } from "./apiBase";
 
 const defaultManual: ManualUsageInput = {
   region: "eastus",
@@ -395,7 +396,7 @@ async function lookupRegionAvailability(region: string, currency: string): Promi
     meterName: "Data Stored",
     unit: "1 GB/Month"
   });
-  const response = await fetch(`/api/prices/search?${params.toString()}`);
+  const response = await fetch(buildApiUrl(`/prices/search?${params.toString()}`));
   if (!response.ok && response.status !== 206) {
     throw new Error(`Availability lookup failed for ${region}`);
   }
@@ -446,7 +447,7 @@ async function lookupPrices(row: UsageLineItem, target: "gpv1" | "gpv2", refresh
     return cached;
   }
 
-  const request = fetch(`/api/prices/search?${params.toString()}`).then(async (response) => {
+  const request = fetch(buildApiUrl(`/prices/search?${params.toString()}`)).then(async (response) => {
     if (!response.ok && response.status !== 206) {
       throw new Error(`Pricing lookup failed for ${row.meterName}`);
     }
