@@ -3,7 +3,8 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "types": ["vite/client"],
-    "baseUrl": "."
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src"]
 }
