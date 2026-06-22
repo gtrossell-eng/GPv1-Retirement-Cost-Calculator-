@@ -16,7 +16,7 @@
     "audit:prod": "npm audit --omit=dev"
   },
   "devDependencies": {
-    "@emnapi/core": "^1.11.0",
+    "@emnapi/core": "^1.11.1",
     "@emnapi/runtime": "^1.11.0",
     "@types/node": "^22.15.29",
     "typescript": "^5.8.3",
