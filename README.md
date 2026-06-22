@@ -42,6 +42,10 @@ Then open the Vite URL shown by `npm run dev`.
 
 No secrets are required.
 
+Web app:
+
+- Optional `VITE_API_BASE_URL` (default `/api`) for environments where frontend and API are split across origins.
+
 For Azure Functions local development, copy `apps/api/local.settings.example.json` to `apps/api/local.settings.json`.
 
 ## Pricing Source

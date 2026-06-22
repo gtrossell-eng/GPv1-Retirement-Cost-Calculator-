@@ -1,36 +1,102 @@
 # Deployment
 
-## Azure Static Web Apps
+## Hosting modes
 
-Recommended v1 hosting target:
+This app supports multiple Azure hosting patterns:
 
-1. Build the repository from the root with `npm run build`.
-2. Configure Azure Static Web Apps with:
-   - App location: `apps/web`
-   - API location: `apps/api`
-   - Output location: `dist`
-3. Use Node.js 20 or later.
-4. No application secrets are required.
+1. **Azure Static Web Apps (recommended default)**
+   - Frontend and managed API under same origin.
+   - Use `VITE_API_BASE_URL=/api`.
 
-The included `staticwebapp.config.json` allows anonymous `/api/*` calls and falls back SPA routes to `index.html`.
+2. **Split App Service + Azure Functions**
+   - Frontend deployed to App Service (or static host).
+   - API deployed to standalone Functions app.
+   - Use reverse proxy for `/api/*` or set `VITE_API_BASE_URL` to the full API base URL.
 
-## Azure App Service Alternative
+3. **Front Door / Application Gateway fronted split deployment**
+   - Keep same-origin routing by terminating traffic at shared edge and routing `/api/*` to Functions.
 
-For App Service, deploy the web build output from `apps/web/dist` behind a Node or static-file host, and deploy the API as a separate Azure Functions app. Configure the frontend host to proxy `/api/*` to the Functions app, or set the same origin through Azure Front Door/Application Gateway.
+## Infrastructure provisioning
 
-## Local Verification Before Deployment
+Use the baseline Bicep template in `infra/azure/main.bicep`.
+
+### Example deployment (Static Web Apps mode)
+
+```powershell
+az deployment group create \
+  --resource-group <resource-group> \
+  --template-file infra/azure/main.bicep \
+  --parameters deploymentMode=swa environmentName=prod appName=gpv2estimator
+```
+
+### Example deployment (Split mode)
+
+```powershell
+az deployment group create \
+  --resource-group <resource-group> \
+  --template-file infra/azure/main.bicep \
+  --parameters deploymentMode=split environmentName=prod appName=gpv2estimator
+```
+
+## Application settings
+
+### Web (`apps/web`)
+
+- `VITE_API_BASE_URL` (optional): API base path or absolute URL.
+  - Default: `/api`
+  - For split origins: `https://<your-functions-host>/api`
+
+### API (`apps/api`)
+
+Required runtime settings:
+
+- `FUNCTIONS_WORKER_RUNTIME=node`
+- `FUNCTIONS_EXTENSION_VERSION=~4`
+- `AzureWebJobsStorage=<storage connection string>`
+- `APPLICATIONINSIGHTS_CONNECTION_STRING=<from App Insights>`
+
+Use Node.js 20 or later.
+
+## Access-control modes
+
+- **Public mode**: anonymous app + API access.
+- **Private preview mode**: enforce authentication at hosting layer before app/API access.
+- **Internal mode**: restrict access to approved identities/tenant.
+
+For SWA private/internal modes, update route authorization in `staticwebapp.config.json` and identity provider settings.
+
+## CI/CD and deployment gates
+
+The repository workflow already runs:
+
+- `npm ci`
+- `npm run test`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run audit:prod`
+- `npm run build`
+
+Recommended merge protection: require these checks and CodeQL to pass before merge.
+
+## Local verification before deployment
 
 Run:
 
 ```powershell
 npm install
 npm run test
+npm run typecheck
+npm run lint
 npm run build
 ```
 
-Acceptance checks:
+## Post-deployment verification
 
-- Manual entry creates usage rows in under five minutes.
-- Sample CSV identifies one Blob Storage row and one excluded Azure Files row.
-- Pricing lookup shows a refresh timestamp.
-- Results show GPv1/GPv2 totals, deltas, confidence labels, notes, and exports.
+Run smoke tests from `docs/post-deploy-smoke-tests.md` and verify `/api/health` returns HTTP 200.
+
+## Operations runbooks
+
+- Production checklist: `docs/production-checklist.md`
+- Monitoring and alerts: `docs/monitoring-and-alerting.md`
+- Incident response and rollback: `docs/incident-response-and-rollback.md`
+- Repo/platform settings: `docs/repo-platform-settings.md`
